@@ -20,9 +20,9 @@
         port: 9345
         timeout: 60
 
-    - name: Download and install RKE2 agent
+    - name: Download and install RKE2 agent (v1.35.1+rke2r1)
       shell: |
-        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=agent sh -
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=v1.35.1+rke2r1 INSTALL_RKE2_TYPE=agent sh -
       args:
         creates: /usr/local/bin/rke2
 
