@@ -172,3 +172,34 @@ resource "incus_instance" "rke2_agent" {
     }
   }
 }
+
+resource "incus_instance" "rancher" {
+  name  = "rancher"
+  image = "images:ubuntu/22.04/cloud"
+  type  = "virtual-machine"
+  config = {
+    "limits.cpu"    = var.cpu
+    "limits.memory" = "4096MiB"
+    "user.user-data" = <<-EOF
+      #cloud-config
+      package_update: true
+      packages:
+        - openssh-server
+      users:
+        - name: ubuntu
+          groups: [adm, sudo]
+          shell: /bin/bash
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          ssh_authorized_keys:
+            - ${trimspace(file("~/.ssh/id_rsa.pub"))}
+    EOF
+  }
+  device {
+    name = "eth0"
+    type = "nic"
+    properties = {
+      network        = incus_network.incusbr0.name
+      "ipv4.address" = "10.0.0.30"
+    }
+  }
+}

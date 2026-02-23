@@ -1,0 +1,40 @@
+---
+- name: Deploy Rancher using Docker Compose
+  hosts: rancher
+  become: yes
+  tasks:
+    - name: Create rancher directory
+      file:
+        path: /home/ubuntu/rancher
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Copy docker-compose.yml for Rancher
+      copy:
+        dest: /home/ubuntu/rancher/docker-compose.yml
+        content: |
+          version: '2'
+
+          services:
+            rancher:
+              image: rancher/rancher:latest
+              restart: always
+              ports:
+              - "80:80/tcp"
+              - "443:443/tcp"
+              volumes:
+              - "rancher-data:/var/lib/rancher"
+              privileged: true
+
+          volumes:
+            rancher-data:
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Run docker compose up
+      shell: docker compose up -d
+      args:
+        chdir: /home/ubuntu/rancher
