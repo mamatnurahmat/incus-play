@@ -1,0 +1,80 @@
+---
+- name: Install RKE2 Server (Master)
+  hosts: rke2_master
+  become: true
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Install RKE2 server
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh -
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Enable and start RKE2 service
+      systemd:
+        name: rke2-server
+        enabled: true
+        state: started
+
+    - name: Wait for kubeconfig to appear
+      wait_for:
+        path: /etc/rancher/rke2/rke2.yaml
+        timeout: 120
+
+    - name: Retrieve node token (used by agents)
+      slurp:
+        src: /var/lib/rancher/rke2/server/node-token
+      register: node_token_raw
+
+    - name: Set fact with node token
+      set_fact:
+        rke2_node_token: "{{ node_token_raw.content | b64decode }}"
+
+- name: Install RKE2 Agent (Workers)
+  hosts: rke2_agent
+  become: true
+  vars:
+    master_ip: 10.0.0.21
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+        state: present
+        update_cache: yes
+
+    - name: Install RKE2 agent
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=agent sh -
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+
+    - name: Configure agent to join the master
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        content: |
+          server: https://{{ master_ip }}:9345
+          token: "{{ hostvars['rke2-master01']['rke2_node_token'] }}"
+        mode: '0600'
+
+    - name: Enable and start RKE2 agent service
+      systemd:
+        name: rke2-agent
+        enabled: true
+        state: started

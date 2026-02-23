@@ -82,3 +82,6 @@ ssh ubuntu@10.0.0.12  # For DB
 
 For detailed instructions on how to install and setup Incus and the Incus Web UI on different Host OS (like Arch/CachyOS and Ubuntu), please see the separate guide: 
 👉 [**Incus Installation Guide**](INCUS_INSTALLATION.md)
+
+For setting up the RKE2 Kubernetes cluster on your VMs:
+👉 [**RKE2 Cluster Setup Guide**](RKE2_GUIDE.md)
