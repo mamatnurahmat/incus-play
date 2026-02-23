@@ -1,7 +1,7 @@
 variable "instance_name" {
   description = "Name of the Ubuntu VM"
   type        = string
-  default     = "ubuntu-vm"
+  default     = "DMZ"
 }
 
 variable "cpu" {
