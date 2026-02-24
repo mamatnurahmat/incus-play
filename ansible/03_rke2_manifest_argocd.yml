@@ -1,4 +1,23 @@
 ---
+# ──────────────────────────────────────────────────
+# 03 - Deploy ArgoCD via RKE2 HelmChart Manifest
+# ──────────────────────────────────────────────────
+# Playbook ini mendeploy ArgoCD menggunakan HelmChart manifest pada RKE2.
+# Akan membuat namespace argocd dan deploy chart argo-cd versi 7.7.16.
+# ArgoCD UI bisa diakses via NodePort 30443.
+#
+# Inventory: rke2_inventory.ini (group: rke2_master)
+# Prasyarat: RKE2 master sudah running (01_rke2_master.yml / 01_rke2_master_ha.yml)
+#
+# Cara apply:
+#   ansible-playbook -i rke2_inventory.ini 03_rke2_manifest_argocd.yml
+#
+# Akses ArgoCD setelah deploy:
+#   URL     : https://<MASTER_IP>:30443
+#   Username: admin
+#   Password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d
+# ──────────────────────────────────────────────────
+
 - name: 03 - Deploy ArgoCD via RKE2 HelmChart Manifest
   hosts: rke2_master
   become: true

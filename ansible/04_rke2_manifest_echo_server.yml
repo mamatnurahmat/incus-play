@@ -1,0 +1,88 @@
+---
+# ──────────────────────────────────────────────────
+# 04 - Deploy Echo-Server via RKE2 HelmChart Manifest
+# ──────────────────────────────────────────────────
+# Playbook ini mendeploy Echo-Server (ealenn/echo-server) menggunakan
+# HelmChart manifest pada RKE2. Echo-Server berguna untuk testing dan
+# debugging request HTTP di dalam cluster Kubernetes.
+#
+# Helm Chart: https://artifacthub.io/packages/helm/ealenn/echo-server
+# Repo      : https://ealenn.github.io/charts
+# Chart     : echo-server (versi 0.5.0)
+#
+# Service diexpose menggunakan NodePort pada port 30080.
+#
+# Inventory: rke2_inventory.ini (group: rke2_master)
+# Prasyarat: RKE2 master sudah running (01_rke2_master.yml / 01_rke2_master_ha.yml)
+#
+# Cara apply:
+#   ansible-playbook -i rke2_inventory.ini 04_rke2_manifest_echo_server.yml
+#
+# Akses Echo-Server setelah deploy:
+#   URL: http://<MASTER_IP>:30080
+# ──────────────────────────────────────────────────
+
+- name: 04 - Deploy Echo-Server via RKE2 HelmChart Manifest
+  hosts: rke2-master01
+  become: true
+  tasks:
+    - name: Ensure RKE2 manifests directory exists
+      file:
+        path: /var/lib/rancher/rke2/server/manifests
+        state: directory
+        mode: '0755'
+
+    - name: Create echo-server namespace manifest
+      copy:
+        dest: /var/lib/rancher/rke2/server/manifests/echo-server-namespace.yaml
+        content: |
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: echo-server
+        mode: '0600'
+
+    - name: Deploy Echo-Server HelmChart manifest
+      copy:
+        dest: /var/lib/rancher/rke2/server/manifests/echo-server.yaml
+        content: |
+          apiVersion: helm.cattle.io/v1
+          kind: HelmChart
+          metadata:
+            name: echo-server
+            namespace: kube-system
+          spec:
+            repo: https://ealenn.github.io/charts
+            chart: echo-server
+            version: "0.5.0"
+            targetNamespace: echo-server
+            createNamespace: true
+            valuesContent: |-
+              service:
+                type: NodePort
+                port: 80
+                nodePort: 30080
+        mode: '0600'
+
+    - name: Wait for Echo-Server pod to be created
+      shell: >
+        /var/lib/rancher/rke2/bin/kubectl
+        --kubeconfig /etc/rancher/rke2/rke2.yaml
+        get pods -n echo-server -l app.kubernetes.io/name=echo-server
+        --no-headers 2>/dev/null | head -1
+      register: echo_pod
+      retries: 30
+      delay: 10
+      until: echo_pod.stdout | length > 0
+
+    - name: Show Echo-Server access info
+      debug:
+        msg:
+          - "Echo-Server deployed via HelmChart manifest."
+          - "──────────────────────────────────────"
+          - "Access URL : http://10.0.0.21:30080"
+          - "             http://10.0.0.23:30080"
+          - "             http://10.0.0.24:30080"
+          - "──────────────────────────────────────"
+          - "Test with curl:"
+          - "  curl http://10.0.0.21:30080"

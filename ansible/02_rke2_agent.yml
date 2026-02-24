@@ -1,4 +1,18 @@
 ---
+# ──────────────────────────────────────────────────
+# 02 - Install RKE2 Agent (Worker Node)
+# ──────────────────────────────────────────────────
+# Playbook ini menginstall RKE2 agent (worker) dan join ke cluster.
+# Membutuhkan file rke2_token yang sudah digenerate oleh playbook master.
+# Pastikan master node sudah running sebelum menjalankan playbook ini.
+#
+# Inventory: rke2_inventory.ini (group: rke2_agent)
+# Prasyarat: Jalankan 01_rke2_master.yml atau 01_rke2_master_ha.yml terlebih dahulu
+#
+# Cara apply:
+#   ansible-playbook -i rke2_inventory.ini 02_rke2_agent.yml
+# ──────────────────────────────────────────────────
+
 - name: 02 - Install RKE2 Agent
   hosts: rke2_agent
   become: true

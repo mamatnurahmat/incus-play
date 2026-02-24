@@ -1,4 +1,17 @@
 ---
+# ──────────────────────────────────────────────────
+# 01 - Install RKE2 Master (Single Node)
+# ──────────────────────────────────────────────────
+# Playbook ini menginstall RKE2 server (master) pada single node.
+# Akan menginstall prerequisites, download RKE2, konfigurasi server,
+# start service, simpan node token, dan setup kubectl untuk user ubuntu.
+#
+# Inventory: rke2_inventory.ini (group: rke2_master)
+#
+# Cara apply:
+#   ansible-playbook -i rke2_inventory.ini 01_rke2_master.yml
+# ──────────────────────────────────────────────────
+
 - name: 01 - Install RKE2 Master
   hosts: rke2_master
   become: true

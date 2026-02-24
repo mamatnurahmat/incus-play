@@ -1,0 +1,195 @@
+---
+# ──────────────────────────────────────────────────
+# RKE2 HA Master Setup
+# ──────────────────────────────────────────────────
+# Run order:
+#   1. Deploy HAProxy first (deploy-haproxy.yml) so the LB IP is ready
+#   2. Run this playbook to bootstrap all 3 masters
+#
+# Usage:
+#   ansible-playbook -i rke2_inventory.ini 01_rke2_master_ha.yml
+# ──────────────────────────────────────────────────
+
+- name: 01 HA - Install first RKE2 Master (bootstrap node)
+  hosts: rke2-master01
+  become: true
+  vars:
+    lb_address: 10.0.0.10
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+          - iptables
+        state: present
+        update_cache: yes
+
+    - name: Download and install RKE2 server (v1.35.1+rke2r1)
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=v1.35.1+rke2r1 INSTALL_RKE2_TYPE=server sh -
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+
+    - name: Create RKE2 server config (first master)
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        mode: '0600'
+        content: |
+          tls-san:
+            - {{ lb_address }}
+            - rke2-master01
+            - 10.0.0.21
+          disable:
+            - rke2-ingress-nginx
+
+    - name: Enable and start RKE2 server
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+      register: rke2_start
+      ignore_errors: yes
+
+    - name: Debug if RKE2 failed to start
+      block:
+        - name: Get journal logs
+          command: journalctl -u rke2-server --no-pager -n 50
+          register: rke2_logs
+        - name: Show logs
+          debug:
+            var: rke2_logs.stdout_lines
+        - name: Fail
+          fail:
+            msg: "rke2-server failed to start on first master."
+      when: rke2_start is failed
+
+    - name: Wait for Kubernetes API
+      wait_for:
+        port: 6443
+        timeout: 180
+
+    - name: Wait for node token
+      wait_for:
+        path: /var/lib/rancher/rke2/server/node-token
+        timeout: 120
+
+    - name: Retrieve node token
+      slurp:
+        src: /var/lib/rancher/rke2/server/node-token
+      register: node_token_raw
+
+    - name: Save node token locally
+      copy:
+        content: "{{ node_token_raw.content | b64decode | trim }}"
+        dest: "{{ playbook_dir }}/rke2_token"
+        mode: '0600'
+      delegate_to: localhost
+      become: false
+
+    - name: Setup kubectl for ubuntu user
+      block:
+        - name: Create .kube directory
+          file:
+            path: /home/ubuntu/.kube
+            state: directory
+            owner: ubuntu
+            mode: '0700'
+        - name: Copy kubeconfig
+          copy:
+            src: /etc/rancher/rke2/rke2.yaml
+            dest: /home/ubuntu/.kube/config
+            remote_src: yes
+            owner: ubuntu
+            mode: '0600'
+        - name: Update kubeconfig server to LB address
+          replace:
+            path: /home/ubuntu/.kube/config
+            regexp: '127.0.0.1'
+            replace: '{{ lb_address }}'
+        - name: Add kubectl to PATH
+          lineinfile:
+            path: /home/ubuntu/.bashrc
+            line: 'export PATH=$PATH:/var/lib/rancher/rke2/bin'
+            state: present
+
+- name: 01 HA - Join additional Masters to cluster
+  hosts: rke2-master02:rke2-master03
+  become: true
+  serial: 1
+  vars:
+    lb_address: 10.0.0.10
+    first_master_ip: 10.0.0.21
+  tasks:
+    - name: Install prerequisites
+      apt:
+        name:
+          - curl
+          - gnupg
+          - ca-certificates
+          - iptables
+        state: present
+        update_cache: yes
+
+    - name: Download and install RKE2 server (v1.35.1+rke2r1)
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION=v1.35.1+rke2r1 INSTALL_RKE2_TYPE=server sh -
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Create RKE2 config directory
+      file:
+        path: /etc/rancher/rke2
+        state: directory
+        mode: '0755'
+
+    - name: Read node token from local file
+      set_fact:
+        node_token: "{{ lookup('file', playbook_dir + '/rke2_token') }}"
+
+    - name: Create RKE2 server config (join existing cluster)
+      copy:
+        dest: /etc/rancher/rke2/config.yaml
+        mode: '0600'
+        content: |
+          server: https://{{ first_master_ip }}:9345
+          token: {{ node_token }}
+          tls-san:
+            - {{ lb_address }}
+            - {{ inventory_hostname }}
+            - {{ ansible_host }}
+          disable:
+            - rke2-ingress-nginx
+
+    - name: Enable and start RKE2 server
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+      register: rke2_start
+      ignore_errors: yes
+
+    - name: Debug if RKE2 failed to start
+      block:
+        - name: Get journal logs
+          command: journalctl -u rke2-server --no-pager -n 50
+          register: rke2_logs
+        - name: Show logs
+          debug:
+            var: rke2_logs.stdout_lines
+        - name: Fail
+          fail:
+            msg: "rke2-server failed to start on {{ inventory_hostname }}."
+      when: rke2_start is failed
+
+    - name: Wait for this node to join the cluster
+      wait_for:
+        port: 6443
+        timeout: 180

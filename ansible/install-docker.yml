@@ -1,4 +1,20 @@
 ---
+# ──────────────────────────────────────────────────
+# Install Docker dan Docker Compose
+# ──────────────────────────────────────────────────
+# Playbook ini menginstall Docker Engine, containerd, dan Docker Compose
+# plugin pada semua VM di group incus_vms. Juga menambahkan user ubuntu
+# ke group docker agar bisa menjalankan docker tanpa sudo.
+#
+# Inventory: inventory.ini (group: incus_vms)
+#
+# Cara apply:
+#   ansible-playbook -i inventory.ini install-docker.yml
+#
+# Untuk install hanya pada host tertentu (misal hanya rancher):
+#   ansible-playbook -i inventory.ini install-docker.yml --limit rancher
+# ──────────────────────────────────────────────────
+
 - name: Install Docker and Docker Compose
   hosts: incus_vms
   become: yes

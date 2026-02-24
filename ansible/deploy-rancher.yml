@@ -1,4 +1,18 @@
 ---
+# ──────────────────────────────────────────────────
+# Deploy Rancher menggunakan Docker Compose
+# ──────────────────────────────────────────────────
+# Playbook ini mendeploy Rancher (latest) pada node rancher (10.0.0.30)
+# menggunakan Docker Compose. Rancher akan running di port 80 dan 443.
+# Data Rancher disimpan di Docker volume 'rancher-data'.
+#
+# Inventory: inventory.ini (group: rancher)
+# Prasyarat: Docker sudah terinstall di node rancher (install-docker.yml)
+#
+# Cara apply:
+#   ansible-playbook -i inventory.ini deploy-rancher.yml
+# ──────────────────────────────────────────────────
+
 - name: Deploy Rancher using Docker Compose
   hosts: rancher
   become: yes

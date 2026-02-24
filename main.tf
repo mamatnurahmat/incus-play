@@ -142,6 +142,68 @@ resource "incus_instance" "rke2_master" {
   }
 }
 
+resource "incus_instance" "rke2_master02" {
+  name  = "rke2-master02"
+  image = "images:ubuntu/22.04/cloud"
+  type  = "virtual-machine"
+  config = {
+    "limits.cpu"    = var.cpu
+    "limits.memory" = "4096MiB"
+    "user.user-data" = <<-EOF
+      #cloud-config
+      package_update: true
+      packages:
+        - openssh-server
+      users:
+        - name: ubuntu
+          groups: [adm, sudo]
+          shell: /bin/bash
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          ssh_authorized_keys:
+            - ${trimspace(file("~/.ssh/id_rsa.pub"))}
+    EOF
+  }
+  device {
+    name = "eth0"
+    type = "nic"
+    properties = {
+      network        = incus_network.incusbr0.name
+      "ipv4.address" = "10.0.0.23"
+    }
+  }
+}
+
+resource "incus_instance" "rke2_master03" {
+  name  = "rke2-master03"
+  image = "images:ubuntu/22.04/cloud"
+  type  = "virtual-machine"
+  config = {
+    "limits.cpu"    = var.cpu
+    "limits.memory" = "4096MiB"
+    "user.user-data" = <<-EOF
+      #cloud-config
+      package_update: true
+      packages:
+        - openssh-server
+      users:
+        - name: ubuntu
+          groups: [adm, sudo]
+          shell: /bin/bash
+          sudo: ALL=(ALL) NOPASSWD:ALL
+          ssh_authorized_keys:
+            - ${trimspace(file("~/.ssh/id_rsa.pub"))}
+    EOF
+  }
+  device {
+    name = "eth0"
+    type = "nic"
+    properties = {
+      network        = incus_network.incusbr0.name
+      "ipv4.address" = "10.0.0.24"
+    }
+  }
+}
+
 resource "incus_instance" "rke2_agent" {
   name  = "rke2-agent01"
   image = "images:ubuntu/22.04/cloud"
