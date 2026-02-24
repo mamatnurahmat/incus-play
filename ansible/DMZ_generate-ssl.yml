@@ -15,10 +15,10 @@
 # Prasyarat: -
 #
 # Cara apply:
-#   ansible-playbook -i inventory.ini generate-ssl.yml
+#   ansible-playbook -i inventory.ini DMZ_generate-ssl.yml
 #
-# Setelah generate SSL, jalankan deploy-haproxy.yml untuk apply:
-#   ansible-playbook -i inventory.ini deploy-haproxy.yml
+# Setelah generate SSL, jalankan deploy playbook u/ apply:
+#   ansible-playbook -i inventory.ini DMZ_deploy-haproxy-simple.yml
 # ──────────────────────────────────────────────────
 
 - name: Generate Self-Signed SSL Certificates

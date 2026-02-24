@@ -1,0 +1,102 @@
+---
+# ──────────────────────────────────────────────────
+# Install CrowdSec & HAProxy SPOA Bouncer (Docker Compose)
+# ──────────────────────────────────────────────────
+# Playbook ini menginstal CrowdSec secara native pada VM agar user
+# dapat menggunakan 'cscli' dan menjalankan dashboard.
+# Selain itu, playbook ini mendeploy HAProxy SPOA Bouncer
+# menggunakan Docker Compose (network_mode: host).
+#
+# Inventory: inventory.ini (group: dmz)
+#
+# Cara apply:
+#   ansible-playbook -i inventory.ini DMZ_deploy-crowdsec-boucher.yml
+# ──────────────────────────────────────────────────
+
+- name: Deploy CrowdSec and SPOA Bouncer on DMZ
+  hosts: dmz
+  become: true
+  tasks:
+    - name: Add CrowdSec APT repository
+      shell: curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | bash
+      args:
+        creates: /etc/apt/sources.list.d/crowdsec_crowdsec.list
+
+    - name: Install CrowdSec
+      apt:
+        name: crowdsec
+        state: present
+        update_cache: yes
+
+    - name: Get existance of HAProxy Bouncer API key
+      shell: cscli bouncers list | grep -q 'haproxy-spoa-bouncer'
+      register: bouncer_exists
+      ignore_errors: yes
+
+    - name: Generate Bouncer API Key
+      shell: cscli bouncers add haproxy-spoa-bouncer -o raw
+      register: new_bouncer_key
+      when: bouncer_exists.rc != 0
+
+    - name: Get the existing Bouncer API Key (if not newly generated)
+      shell: cscli bouncers list || true
+      # In crowdsec, you cannot retrieve a token again after generation.
+      # So we save it to a file.
+      when: bouncer_exists.rc == 0
+
+    - name: Save new bouncer key to a file
+      copy:
+        content: "{{ new_bouncer_key.stdout }}"
+        dest: /root/.haproxy-spoa-bouncer.key
+        mode: '0600'
+      when: bouncer_exists.rc != 0
+
+    - name: Read bouncer key securely
+      shell: cat /root/.haproxy-spoa-bouncer.key
+      register: bouncer_key_value
+
+    - name: Create crowdsec-bouncer directory
+      file:
+        path: /home/ubuntu/crowdsec-bouncer
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Create Docker Compose for SPOA Bouncer
+      copy:
+        dest: /home/ubuntu/crowdsec-bouncer/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+        content: |
+          version: '3'
+          services:
+            spoa-bouncer:
+              image: crowdsecurity/spoa-bouncer:latest
+              container_name: crowdsec-spoa-bouncer
+              restart: always
+              environment:
+                - CROWDSEC_URL=http://127.0.0.1:8080/
+                - CROWDSEC_KEY={{ bouncer_key_value.stdout }}
+                - LOG_LEVEL=info
+              network_mode: "host"
+
+    - name: Stop existing crowdsec bouncer container
+      shell: docker compose down
+      args:
+        chdir: /home/ubuntu/crowdsec-bouncer
+      ignore_errors: yes
+
+    - name: Start CrowdSec SPOA Bouncer with Docker Compose
+      shell: docker compose up -d --force-recreate
+      args:
+        chdir: /home/ubuntu/crowdsec-bouncer
+
+    - name: Show Info
+      debug:
+        msg:
+          - "✔️ CrowdSec Engine terinstall secara native di VM."
+          - "⚠️ Local Metabase Dashboard (cscli dashboard) DITUTUP di CrowdSec v1.6+. Silakan gunakan https://app.crowdsec.net/."
+          - "✔️ HAProxy CrowdSec Bouncer jalan via Docker Compose di port 9000 (Host network)."
+          - "Silakan integrasikan backend SPOA HAProxy ke 10.0.0.10:9000"

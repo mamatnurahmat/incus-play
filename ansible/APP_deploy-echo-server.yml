@@ -9,7 +9,7 @@
 # Prasyarat: Docker sudah terinstall di node APP (install-docker.yml)
 #
 # Cara apply:
-#   ansible-playbook -i inventory.ini deploy-echo-server.yml
+#   ansible-playbook -i inventory.ini APP_deploy-echo-server.yml
 # ──────────────────────────────────────────────────
 
 - name: Deploy Echo Server on APP VM

@@ -10,7 +10,7 @@
 # Prasyarat: RKE2 master sudah running (01_rke2_master.yml / 01_rke2_master_ha.yml)
 #
 # Cara apply:
-#   ansible-playbook -i rke2_inventory.ini 03_rke2_manifest_argocd.yml
+#   ansible-playbook -i rke2_inventory.ini rke2_manifest_argocd.yml
 #
 # Akses ArgoCD setelah deploy:
 #   URL     : https://<MASTER_IP>:30443

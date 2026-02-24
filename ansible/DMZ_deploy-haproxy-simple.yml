@@ -14,7 +14,10 @@
 #   - Docker sudah terinstall di node DMZ (install-docker.yml)
 # Prasyarat:
 #   - Docker sudah terinstall di node DMZ (install-docker.yml)
-#   - SSL certificate sudah digenerate (generate-ssl.yml)
+#   - SSL certificate sudah digenerate (DMZ_generate-ssl.yml)
+#
+# Cara apply:
+#   ansible-playbook -i inventory.ini DMZ_deploy-haproxy-simple.yml
 # ──────────────────────────────────────────────────
 
 - name: Deploy HAProxy on DMZ

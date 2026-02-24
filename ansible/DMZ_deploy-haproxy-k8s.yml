@@ -17,8 +17,8 @@
 #   - SSL certificate sudah digenerate (generate-ssl.yml)
 #
 # Cara apply:
-#   ansible-playbook -i inventory.ini generate-ssl.yml
-#   ansible-playbook -i inventory.ini deploy-haproxy.yml
+#   ansible-playbook -i inventory.ini DMZ_generate-ssl.yml
+#   ansible-playbook -i inventory.ini DMZ_deploy-haproxy-k8s.yml
 # ──────────────────────────────────────────────────
 
 - name: Deploy HAProxy on DMZ

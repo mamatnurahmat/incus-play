@@ -16,7 +16,7 @@
 # Prasyarat: RKE2 master sudah running (01_rke2_master.yml / 01_rke2_master_ha.yml)
 #
 # Cara apply:
-#   ansible-playbook -i rke2_inventory.ini 04_rke2_manifest_echo_server.yml
+#   ansible-playbook -i rke2_inventory.ini rke2_manifest_echo_server.yml
 #
 # Akses Echo-Server setelah deploy:
 #   URL: http://<MASTER_IP>:30080
