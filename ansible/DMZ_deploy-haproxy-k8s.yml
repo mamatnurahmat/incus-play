@@ -75,7 +75,7 @@
               balance roundrobin
               server rke2-master01 10.0.0.21:6443 check
               server rke2-master02 10.0.0.23:6443 check
-              server rke2-master03 10.0.0.24:6443 check
+              server rke2-master03 10.0.0.25:6443 check
 
           # ──────────────────────────────────────
           # RKE2 Supervisor API (9345)
@@ -88,7 +88,7 @@
               balance roundrobin
               server rke2-master01 10.0.0.21:9345 check
               server rke2-master02 10.0.0.23:9345 check
-              server rke2-master03 10.0.0.24:9345 check
+              server rke2-master03 10.0.0.25:9345 check
 
           # ──────────────────────────────────────
           # HTTP (80) - Redirect echo.local ke HTTPS
@@ -109,7 +109,7 @@
               balance roundrobin
               server rke2-master01 10.0.0.21:80 check
               server rke2-master02 10.0.0.23:80 check
-              server rke2-master03 10.0.0.24:80 check
+              server rke2-master03 10.0.0.25:80 check
 
           # ──────────────────────────────────────
           # HTTPS (443) - SSL Termination
@@ -130,7 +130,7 @@
               balance roundrobin
               server rke2-master01 10.0.0.21:443 check ssl verify none
               server rke2-master02 10.0.0.23:443 check ssl verify none
-              server rke2-master03 10.0.0.24:443 check ssl verify none
+              server rke2-master03 10.0.0.25:443 check ssl verify none
 
           # ──────────────────────────────────────
           # Echo-Server (echo.local → NodePort 30326)
@@ -141,7 +141,7 @@
               option httpchk GET /
               server rke2-master01 10.0.0.21:30326 check
               server rke2-master02 10.0.0.23:30326 check
-              server rke2-master03 10.0.0.24:30326 check
+              server rke2-master03 10.0.0.25:30326 check
 
           # ──────────────────────────────────────
           # Rancher UI (8443 -> 443)
@@ -165,7 +165,7 @@
               balance roundrobin
               server rke2-master01 10.0.0.21:30443 check
               server rke2-master02 10.0.0.23:30443 check
-              server rke2-master03 10.0.0.24:30443 check
+              server rke2-master03 10.0.0.25:30443 check
 
     - name: Copy docker-compose.yml for HAProxy
       copy:
